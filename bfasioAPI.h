@@ -6,10 +6,13 @@
 
 #include <string>
 #include <sstream>
+#include <iostream>
+#include <fstream>
 #include <boost/weak_ptr.hpp>
 #include "JSAPIAuto.h"
 #include "BrowserHost.h"
 #include "bfasio.h"
+#include "bfasio_stream.h"
 
 #ifndef H_bfasioAPI
 #define H_bfasioAPI
@@ -31,15 +34,17 @@ public:
     bfasioAPI(const bfasioPtr& plugin, const FB::BrowserHostPtr& host) :
         m_plugin(plugin), m_host(host)
     {
-        registerMethod("echo",      make_method(this, &bfasioAPI::echo));
-        registerMethod("testEvent", make_method(this, &bfasioAPI::testEvent));
-        
+        registerMethod("echo",          make_method(this, &bfasioAPI::echo));
+        registerMethod("testEvent",     make_method(this, &bfasioAPI::testEvent));
+        registerMethod("write",     make_method(this, &bfasioAPI::write));
+        registerMethod("read",     make_method(this, &bfasioAPI::read));
+
         // Read-write property
         registerProperty("testString",
                          make_property(this,
                                        &bfasioAPI::get_testString,
                                        &bfasioAPI::set_testString));
-        
+
         // Read-only property
         registerProperty("version",
                          make_property(this,
@@ -66,7 +71,18 @@ public:
 
     // Method echo
     FB::variant echo(const FB::variant& msg);
-    
+
+    void write(const std::string& path, const std::string& data, const FB::JSObjectPtr& callback ) {
+        boost::thread t(boost::bind(&bfasioAPI::_write,
+         this, path, data, callback));
+    };
+    void _write(const std::string& path, const std::string& data, const FB::JSObjectPtr& callback);
+    void read(const std::string& path, const FB::JSObjectPtr& callback) {
+        boost::thread t(boost::bind(&bfasioAPI::_read,
+         this, path, callback));
+    };
+    void _read(const std::string& path, const FB::JSObjectPtr& callback);
+
     // Event helpers
     FB_JSAPI_EVENT(test, 0, ());
     FB_JSAPI_EVENT(echo, 2, (const FB::variant&, const int));

@@ -11,6 +11,43 @@
 
 #include "bfasioAPI.h"
 
+void bfasioAPI::_write(const std::string& path, const std::string& data, const FB::JSObjectPtr& callback) {
+    std::string nono("..");
+    size_t found;
+    found = path.find(nono);
+    if (found != std::string::npos) {
+        callback->InvokeAsync("", FB::variant_list_of(false)("You cannot jump directories with .. "));
+        return;
+    }
+    std::ofstream file(path.c_str());
+    if (file.is_open()) {
+        file << data;
+        file.close();
+        callback->InvokeAsync("", FB::variant_list_of(true));
+    } else {
+       callback->InvokeAsync("", FB::variant_list_of(false)("File could not be opened."));
+    }
+}
+void bfasioAPI::_read(const std::string& path, const FB::JSObjectPtr& callback) {
+    std::string nono("..");
+    size_t found;
+    found = path.find(nono);
+    if (found != std::string::npos) {
+        callback->InvokeAsync("", FB::variant_list_of(false)("You cannot jump directories with .. "));
+        return;
+    }
+    std::ifstream file(path.c_str());
+    if (file.is_open()) {
+        std::string file_text(
+            ( std::istreambuf_iterator<char>(file) ), std::istreambuf_iterator<char>()
+        );
+        callback->InvokeAsync( "", FB::variant_list_of(file_text) );
+        file.close();
+    } else {
+       callback->InvokeAsync("", FB::variant_list_of(false)("File could not be opened."));
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn FB::variant bfasioAPI::echo(const FB::variant& msg)
 ///
@@ -20,7 +57,7 @@
 FB::variant bfasioAPI::echo(const FB::variant& msg)
 {
     static int n(0);
-    fire_echo("So far, you clicked this many times: ", n++);
+    fire_echo("xxxSo far, you clicked this many times: ", n++);
 
     // return "foobar";
     return msg;
