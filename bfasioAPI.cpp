@@ -8,7 +8,8 @@
 #include "variant_list.h"
 #include "DOM/Document.h"
 #include "global/config.h"
-
+#include <stdio.h>
+#include <stdlib.h>
 #include "bfasioAPI.h"
 
 void bfasioAPI::_write(const std::string& path, const std::string& data, const FB::JSObjectPtr& callback) {
@@ -19,7 +20,7 @@ void bfasioAPI::_write(const std::string& path, const std::string& data, const F
         callback->InvokeAsync("", FB::variant_list_of(false)("You cannot jump directories with .. "));
         return;
     }
-    std::ofstream file(path.c_str());
+    std::ofstream file(path.c_str(),std::ios_base::binary);
     if (file.is_open()) {
         file << data;
         file.close();
@@ -36,13 +37,21 @@ void bfasioAPI::_read(const std::string& path, const FB::JSObjectPtr& callback) 
         callback->InvokeAsync("", FB::variant_list_of(false)("You cannot jump directories with .. "));
         return;
     }
-    std::ifstream file(path.c_str());
-    if (file.is_open()) {
-        std::string file_text(
-            ( std::istreambuf_iterator<char>(file) ), std::istreambuf_iterator<char>()
-        );
-        callback->InvokeAsync( "", FB::variant_list_of(file_text) );
-        file.close();
+    // wtf? std::string sucks balls at this point, but regular ol  c fread does what we want.
+    FILE* file = fopen(path.c_str(),"r");
+    if (file) {
+        long size;
+        fseek(file,0L,SEEK_END);
+        size = ftell(file);
+        fseek(file,0L,SEEK_SET);
+        char * buffer = (char *)malloc(size * sizeof(size_t));
+        if (buffer == NULL) {
+          callback->InvokeAsync("", FB::variant_list_of(false)("malloc failed epically"));
+        }
+        fread(buffer,sizeof(size_t),size,file);
+        fclose(file);
+        callback->InvokeAsync("", FB::variant_list_of(buffer));
+        free(buffer);
     } else {
        callback->InvokeAsync("", FB::variant_list_of(false)("File could not be opened."));
     }

@@ -12,7 +12,6 @@
 #include "JSAPIAuto.h"
 #include "BrowserHost.h"
 #include "bfasio.h"
-#include "bfasio_stream.h"
 
 #ifndef H_bfasioAPI
 #define H_bfasioAPI
